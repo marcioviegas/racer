@@ -85,15 +85,16 @@ async function handleCreateRace() {
 
 		console.log(`race created ${JSON.stringify(race)}`)
 
-		store.race_id = race.ID;
+		store.race_id = race.ID - 1;
 
 		renderAt('#race', renderRaceStartView(race.Track))
 
 		await runCountdown();
 
-		await startRace(race.ID);
+		console.log(`start ${store.race_id}`)
+		await startRace(store.race_id);
 
-		await runRace(race.ID);
+		await runRace(store.race_id);
 		
 	}).catch(e => {
 
@@ -109,7 +110,11 @@ async function runRace(raceID) {
 	var raceInterval = setInterval(async function(){
 
 		const res = await getRace(raceID);
-		
+
+		console.log(res);
+
+		console.log(store);
+
 		if(res.status === 'in-progress') {
 			renderAt('#leaderBoard', raceProgress(res.positions))
 		}
@@ -186,7 +191,7 @@ function handleSelectTrack(target) {
 
 function handleAccelerate() {
 	console.log("accelerate button clicked")
-	this.accelerate()
+	this.accelerate(store.race_id)
 			.then(() => console.log('Accelerated'))
 			.catch((e) => console.log('Fail to accelerated'));
 }
@@ -291,7 +296,7 @@ function resultsView(positions) {
 }
 
 function raceProgress(positions) {
-	let userPlayer = positions.find(e => e.id === store.player_id)
+	let userPlayer = positions.find(e => "" + e.id === store.player_id)
 	userPlayer.driver_name += " (you)"
 
 	positions = positions.sort((a, b) => (a.segment > b.segment) ? -1 : 1)
@@ -340,7 +345,6 @@ function defaultFetchOpts() {
 	}
 }
 
-
 function getTracks() {
 	return fetch(`${SERVER}/api/tracks`, defaultFetchOpts())		
 		.then(res => res.json())
@@ -370,7 +374,7 @@ function createRace(player_id, track_id) {
 
 async function getRace(id) {
 	try {
-		return await fetch(`${SERVER}/api/races/${id}`, defaultFetchOpts());
+		return await (await fetch(`${SERVER}/api/races/${id}`, defaultFetchOpts())).json();
 	} catch (e) {
 		throw new Error(`Problem with getRace::${e}`);
 	}
@@ -381,13 +385,15 @@ async function startRace(id) {
 		method: 'POST',
 		...defaultFetchOpts(),
 	})
-	.then(res => res.json())
 	.catch(err => console.log("Problem with getRace request::", err))
 }
 
 async function accelerate(id) {
 	try {
-		return await fetch(`${SERVER}/api/races/${id0-}/accelerate`, defaultFetchOpts());
+		return await fetch(`${SERVER}/api/races/${id}/accelerate`, {
+			method: 'POST',
+			...defaultFetchOpts(),
+		});
 	} catch (e) {
 		throw new Error(`Problem with getRace::${e}`);
 	}
